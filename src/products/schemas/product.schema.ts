@@ -14,7 +14,7 @@ export class Product {
   @Prop()
   description: string;
 
-  @Prop({ unique: true })
+  @Prop({ requerided: true, unique: true })
   slug: string;
 
   @Prop({ default: 0, min: 0 })
@@ -31,3 +31,12 @@ export class Product {
 }
 
 export const ProductSchema = SchemaFactory.createForClass(Product);
+
+ProductSchema.pre('save', function () {
+  if (!this.slug) {
+    this.slug = this.title;
+  }
+  this.slug = this.slug.toLowerCase().replaceAll(' ', '_').replaceAll("'", '');
+});
+
+// ProductSchema.post()
