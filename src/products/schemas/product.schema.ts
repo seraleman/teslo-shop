@@ -1,42 +1,68 @@
+import { DateTime } from 'luxon';
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { HydratedDocument } from 'mongoose';
+import mongoose, { HydratedDocument } from 'mongoose';
+
+import { clean } from 'src/common/helpers/string-clean';
+import { ProductImage } from './product-image.schema';
 
 export type ProductDocument = HydratedDocument<Product>;
 
 @Schema()
 export class Product {
-  @Prop({ required: true, unique: true })
-  title: string;
+  @Prop({ default: DateTime.now() })
+  createdAt: Date;
+
+  @Prop()
+  description: string;
+
+  @Prop()
+  gender: string;
+
+  @Prop({
+    type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'ProductImage' }],
+    default: [],
+  })
+  images: ProductImage[];
 
   @Prop({ default: 0 })
   price: number;
 
   @Prop()
-  description: string;
+  sizes: [string];
 
-  @Prop({ requerided: true, unique: true })
+  @Prop({ required: true, unique: true, index: true })
+  title: string;
+
+  @Prop({ requerided: true, unique: true, index: true }) // unique no trabaja sin index
   slug: string;
 
   @Prop({ default: 0, min: 0 })
   stock: number;
 
-  @Prop()
-  sizes: [string];
+  @Prop({ default: [] })
+  tags: [string];
 
   @Prop()
-  gender: string;
-
-  // tags
-  // images
+  updatedAt: Date;
 }
 
 export const ProductSchema = SchemaFactory.createForClass(Product);
 
-ProductSchema.pre('save', function () {
-  if (!this.slug) {
-    this.slug = this.title;
-  }
-  this.slug = this.slug.toLowerCase().replaceAll(' ', '_').replaceAll("'", '');
+ProductSchema.pre('findOneAndUpdate', async function () {
+  this.set({ updatedAt: DateTime.now() }).set({
+    slug: clean(this.getUpdate()['title']),
+  });
 });
 
-// ProductSchema.post()
+ProductSchema.pre('save', function () {
+  this.slug = this.title.toLowerCase().replaceAll(' ', '_').replaceAll("'", '');
+});
+
+ProductSchema.methods.toJSON = function () {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { _id, __v, ...product } = this.toObject();
+
+  product.id = _id;
+
+  return product;
+};

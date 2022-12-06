@@ -10,6 +10,7 @@ import { CreateProductDto } from './dto/create-product.dto';
 import { PaginationDto } from 'src/common/dtos/pagination.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import ProductRepositoryMongoDB from './adapters/product-repository-mongo-db';
+import { Product } from './schemas/product.schema';
 
 @Injectable()
 export class ProductsService {
@@ -40,8 +41,16 @@ export class ProductsService {
     }
   }
 
-  update(id: string, updateProductDto: UpdateProductDto) {
-    return `This action updates a #${id} product`;
+  async update(id: string, updateProductDto: UpdateProductDto) {
+    let product: Product;
+    try {
+      product = await this.productRepository.update(id, updateProductDto);
+    } catch (error) {
+      this.handlerDBExceptions(error);
+    }
+    if (!product)
+      throw new NotFoundException(`Product with id '${id}' not found`);
+    return product;
   }
 
   async remove(id: string) {
@@ -54,9 +63,10 @@ export class ProductsService {
   private handlerDBExceptions(error: any) {
     if (error.code === 11000) {
       this.logger.error(`Error code: ${error.code}`);
+      console.log(error);
       this.logger.error(error);
       throw new BadRequestException(
-        `There is already a product with name '${error.keyValue.title}'`,
+        `There is already a product with title '${error.keyValue.slug}'`,
         {
           cause: new Error(),
           description: error,

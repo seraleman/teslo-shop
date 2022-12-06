@@ -1,11 +1,11 @@
-import { BadGatewayException, Injectable, PipeTransform } from '@nestjs/common';
+import { BadRequestException, Injectable, PipeTransform } from '@nestjs/common';
 import { isValidObjectId } from 'mongoose';
 
 @Injectable()
 export class ParseMongoIdPipe implements PipeTransform {
   transform(value: string) {
     if (!isValidObjectId(value))
-      throw new BadGatewayException(`'${value}' is not a valid MongoID`);
+      throw new BadRequestException(`Id '${value}' is not a valid Mongo ID`);
     return value;
   }
 }

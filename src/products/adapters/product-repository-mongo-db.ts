@@ -7,9 +7,12 @@ import { FindProducts } from '../interfaces/find-products.interface';
 import { PaginationDto } from 'src/common/dtos/pagination.dto';
 import { Product, ProductDocument } from '../schemas/product.schema';
 import { ProductRepository } from '../interfaces/products-repository.interface';
+import { UpdateProductDto } from '../dto/update-product.dto';
 
 @Injectable()
 export default class ProductRepositoryMongoDB implements ProductRepository {
+  private validateObjecId = isValidObjectId;
+
   constructor(
     @InjectModel(Product.name) private productModel: Model<ProductDocument>,
   ) {}
@@ -34,7 +37,7 @@ export default class ProductRepositoryMongoDB implements ProductRepository {
 
   async search(term: string): Promise<FindProducts> {
     let product: Product;
-    if (isValidObjectId(term)) {
+    if (this.validateObjecId(term)) {
       product = await this.productModel.findById(term);
       return {
         queriedFields: ['id'],
@@ -51,5 +54,14 @@ export default class ProductRepositoryMongoDB implements ProductRepository {
       queriedFields: ['title', 'slug'],
       results: products,
     };
+  }
+
+  async update(
+    id: string,
+    updateProductDto: UpdateProductDto,
+  ): Promise<Product> {
+    return await this.productModel.findByIdAndUpdate(id, updateProductDto, {
+      new: true,
+    });
   }
 }
